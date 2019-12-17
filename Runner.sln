@@ -49,3 +49,5 @@ https://www.carlrippon.com/asp-net-core-logging-with-serilog-and-sql-server/
            
             loggerFactory.AddFile("Logs/ts-{Date}.txt");
 	    }
+	    
+	    Serilog.Extensions.Logging.File
