@@ -43,3 +43,9 @@ Global
 EndGlobal
 
 https://www.carlrippon.com/asp-net-core-logging-with-serilog-and-sql-server/
+
+ public void Configure(IApplicationBuilder app, IWebHostEnvironment env, ILoggerFactory loggerFactory)
+        {
+           
+            loggerFactory.AddFile("Logs/ts-{Date}.txt");
+	    }
