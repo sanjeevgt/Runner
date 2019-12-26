@@ -1,37 +1,37 @@
+using CI.LogInfo.Interface;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Text;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.WebUtilities;
 using Serilog;
 using Serilog.Events;
-using Microsoft.AspNetCore.Http.Features;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Builder;
 using System.IO;
+using System.Linq;
 using System.Net;
+using System.Text;
+using System.Threading.Tasks;
 
-namespace LogLogging
+namespace CI.LogInfo.Implementation
 {
-    public class SerilogRequestResponseLoggingMiddleware
+    public class ExceptionMiddleWare
     {
-        static readonly ILogger Log = Serilog.Log.ForContext<SerilogRequestResponseLoggingMiddleware>();
+        //static readonly ILogger Log = Serilog.Log.ForContext<ExceptionMiddleWare>();
         private readonly RequestDelegate _next;
-        private readonly ICILogger _cILogger;
-        public SerilogRequestResponseLoggingMiddleware(RequestDelegate next, ICILogger cILogger)
+        private readonly ILoggingInterface _iLoggingInterface;
+        public ExceptionMiddleWare(RequestDelegate next, ILoggingInterface cILogger)
         {
             _next = next ?? throw new ArgumentNullException(nameof(next));
-            _cILogger = cILogger;
+            _iLoggingInterface = cILogger;
         }
-        public async Task Invoke(HttpContext httpContext)
+        public async Task InvokeAsync(HttpContext httpContext)
         {
-            if (httpContext == null) throw new ArgumentNullException(nameof(httpContext));
             var sw = Stopwatch.StartNew();
             var request = await FormatRequest(httpContext.Request);
             var originalBodyStream = httpContext.Response.Body;
 
-            // var start = Stopwatch.GetTimestamp();
             using (var bodyStream = new MemoryStream())
             {
                 try
@@ -55,12 +55,13 @@ namespace LogLogging
                     LogModel logModel = new LogModel()
                     {
                         Host = System.Environment.MachineName,
-                        Message = $@"Request: {request} Respond with [{httpContext.Response.StatusCode}] in {sw.ElapsedMilliseconds}ms",
-                        User = httpContext.User.FindFirst("id")?.Value,
+                        Message = $@"Request: {request} Respond with StatusCode: [{httpContext.Response.StatusCode} : {ReasonPhrases.GetReasonPhrase(httpContext.Response.StatusCode)}] in {sw.ElapsedMilliseconds} ms ",
+                        User = System.Security.Principal.WindowsIdentity.GetCurrent().Name,
+                        Source= httpContext.Request.Path
 
 
                     };
-                    _cILogger.LogInformation(logModel);
+                    _iLoggingInterface.LogInformation(logModel);
                 }
             }
 
@@ -99,10 +100,10 @@ namespace LogLogging
                 ExceptionDetail = exception,
                 Statuscode = code,
                 Source = context.Request.Path,
-                User = context.User.FindFirst("id")?.Value,
+                User = System.Security.Principal.WindowsIdentity.GetCurrent().Name,
 
             };
-            _cILogger.LogError(exceptionModel);
+            _iLoggingInterface.LogError(exceptionModel);
         }
 
         private HttpStatusCode GetErrorCode(Type extype)
@@ -147,7 +148,6 @@ namespace LogLogging
 
                     default:
                         return HttpStatusCode.InternalServerError;
-
                 }
             }
             else
@@ -155,68 +155,6 @@ namespace LogLogging
                 return HttpStatusCode.InternalServerError;
             }
         }
-
-
-        // Extension Method
-        //    public static class Extensions
-        //{
-        //    public static IApplicationBuilder SerilogRequestResponseMiddleware(this IApplicationBuilder builder)
-        //    {
-        //        return builder.UseMiddleware<SerilogRequestResponseLoggingMiddleware>();
-        //    }
-        //}
-
-    }   
-}
-===================
-
-using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace LogLogging
-{
-    public class LogModel
-    {
-        public string Message { get; set; }
-        public string User { get; set; }
-        public string Host { get; set; }
-        public string Source { get; set; }
-       // public string CorellationId { get; set; }
-
     }
-
-    public class ExceptionModel
-    {
-        public string Message { get; set; }
-        public string User { get; set; }
-        public string Host { get; set; }
-        public string Source { get; set; }
-        public int Statuscode { get; set; }
-       // public string CorellationId { get; set; }
-        public Exception ExceptionDetail { get; set; }
-      //  public string PropertyValues { get; set; }
-
-    }
-
-    public enum Exceptions
-    {
-        NuNullReferenceException = 1,
-        FileNotFoundException =2,
-        OverflowException = 3,
-        OutOfMemoryException = 4,
-        InvalidCastException=5,
-        ObjectDisposedException =6,
-        UnauthorizedAccessException =7,
-        NotImplementedException = 8,
-        NotSupportedException = 9,
-        InvalidOperationException= 10,
-        TimeoutException = 11,
-        ArgumentException = 12,
-        FormatException=13,
-        StackOverflowException=14,
-        SqlExcetion = 15,
-        IndexOutOfRangeException = 16,
-        IOException = 17
-    }
+    
 }
