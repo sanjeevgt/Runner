@@ -1,0 +1,47 @@
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Filters;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+
+namespace CI.API.WEB.Attributes
+{
+    public class ValidateCollectionDetailsAttribute: TypeFilterAttribute
+    {
+
+        public ValidateCollectionDetailsAttribute() : base(typeof(ValidateCollectionDetailsAttribute))
+        {
+        }
+        private class ValidateCollectionDetailFilterImplementation : IAsyncActionFilter
+        {
+            public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
+            {
+                var controllerActionDescriptor = context.ActionDescriptor as ControllerActionDescriptor;
+                string controllerName = controllerActionDescriptor?.ControllerName;
+                string actionName = controllerActionDescriptor?.ActionName;
+                if (actionName == "CheckAuthorize")
+                {
+                    Validate34ID(context);
+                }
+                await next();
+            }
+
+            private void Validate34ID(ActionExecutingContext context)
+            {
+                string userId = string.Empty;
+                userId = System.Security.Principal.WindowsIdentity.GetCurrent().Name;
+                if (string.IsNullOrWhiteSpace(Convert.ToString(userId)) || (!Regex.IsMatch(userId, @"^[A-Za-z]{3}[0-9]{4}\z")))
+                    throw new ArgumentException("Please enter the correct 34ID");
+
+                else
+                {
+                    throw new ArgumentException("Please provide the correct 34ID");
+                }
+            }
+        }
+    }
+}
