@@ -158,3 +158,11 @@ namespace CI.LogInfo.Implementation
     }
     
 }
+
+services.Configure<ReadDBConnectionString>(Configuration.GetSection("ConnectionStrings"));
+public class ReadDBConnectionString
+    {
+        public string ConnectionString { get; set; }
+    }
+    
+    https://www.learnmvc.in/crud-operation-with-dotnetcore-dapper.php
