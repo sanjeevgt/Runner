@@ -86,6 +86,7 @@ namespace CI.LogInfo.Implementation
 
         private async Task HandlerExceptionAsync(HttpContext context, System.Exception exception)
         {
+            APIError aPIError = null;
             HttpStatusCode httpStatusCode = (exception as WebException != null &&
                 ((HttpWebResponse)(exception as WebException).Response) != null) ?
                 ((HttpWebResponse)(exception as WebException).Response).StatusCode : GetErrorCode(exception.GetType());
@@ -104,6 +105,22 @@ namespace CI.LogInfo.Implementation
 
             };
             _iLoggingInterface.LogError(exceptionModel);
+            var jsonString = ConvertToJSONString(aPIError);
+            context.Response.ContentType = "application/json";
+            return context.Response.WriteAsync(jsonString);
+        }
+         private string ConvertToJSONString(APIError apiResponse)
+        {
+            return JsonConvert.SerializeObject(apiResponse, JSONSettings());
+        }
+
+        private JsonSerializerSettings JSONSettings()
+        {
+            return new JsonSerializerSettings
+            {
+                ContractResolver = new CamelCasePropertyNamesContractResolver(),
+                Converters = new List<JsonConverter> {  new StringEnumConverter() }
+            };
         }
 
         private HttpStatusCode GetErrorCode(Type extype)
@@ -163,6 +180,16 @@ services.Configure<ReadDBConnectionString>(Configuration.GetSection("ConnectionS
 public class ReadDBConnectionString
     {
         public string ConnectionString { get; set; }
+    }
+    
+ public class APIError
+    {
+        public string Messgae { get; set; }
+
+        public APIError(string message)
+        {
+            this.Messgae = message;
+        }
     }
     
     https://www.learnmvc.in/crud-operation-with-dotnetcore-dapper.php
